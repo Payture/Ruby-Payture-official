@@ -13,22 +13,21 @@ class APITransaction
     end
 end
 
-class APIManager
+class APIManager < OrderManager
     def initialize(merch)
-        #need include the OrderManager
-        @ordManager = OrderManager.new(merch, 'api')
+        super(merch, 'api')
     end
 
     def pay(order, pInfo, custKey, custParams, paytureId)
-        prms = ['Key' => @ordManager.merchant.name, 'Amount' => order.amount, 'OrderId' => order.orderId,
+        prms = Hash['Key' => @merchant.name, 'Amount' => order.amount, 'OrderId' => order.orderId,
         'CustomerKey' => 'RubyTestCustomer', 'PayInfo' => pInfo.plain, 'PaytureId' => '' ]
-        return @ordManager.requestToPayture(prms, 'Pay')
+        return requestToPayture(prms, Commands::PAY)
     end
 
     def block(order, pInfo, custKey, custParams, paytureId)
-        prms = ['Key' => @ordManager.merchant.name, 'Amount' => order.amount, 'OrderId' => order.orderId,
+        prms = Hash['Key' => @merchant.name, 'Amount' => order.amount, 'OrderId' => order.orderId,
         'CustomerKey' => 'RubyTestCustomer', 'PayInfo' => pInfo.plain, 'PaytureId' => '' ]
-        return @ordManager.requestToPayture(prms, 'Block')
+        return requestToPayture(prms, Commands::BLOCK)
     end
 end
 

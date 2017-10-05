@@ -1,5 +1,33 @@
 require 'net/http'
 
+module Commands
+    PAY = 'Pay'
+    BLOCK = 'Block'
+    CHARGE = 'Charge'
+    REFUND = 'Refund'
+    UNBLOCK = 'Refund'
+    PAYSTATUS = 'PayStatus'
+    GETSTATE = 'GetState'
+    INIT = 'Init'
+    REGISTER = 'Register'
+    CHECK = 'Check'
+    DELETE = 'Delete'
+    REMOVE = 'Remove'
+    UPDATE = 'Update'
+    ADD = 'Add'
+    ACTIVATE = 'Activate'
+    GETLIST = 'GetList'
+    SENDCODE = 'SendCode'
+    PAY3DS = 'Pay3DS'
+    BLOCK3DS = 'Block3DS'
+    PAYSUBMIT3DS = 'PaySubmit3DS'
+    MPPAY = 'MPPay'
+    MPBLOCK = 'MPBlock'
+    ANDPAY = 'AndroidPay'
+    APPLEPAY = 'ApplePay'
+end
+
+
 class Merchant
     attr_accessor :name
     attr_accessor :password
@@ -19,25 +47,20 @@ class Payment
 end
 
 class  Service
+include Commands
     attr_reader :merchant
     attr_reader :reqUrl
     attr_reader :api
     def initialize(merch, api)
         @merchant = merch
         @reqUrl = merch.host + '/' + api
-        @api = 'api'
+        @api = api
     end
-    #funcs for send http are needed 
-    def requestToPayture(parms, apiMethod)
-=begin
-        uri = URI(@reqUrl + '/' + apiMethod)
-        res = Net::HTTP.post_form(uri, parms)
-=end
 
+    def requestToPayture(parms, apiMethod)
         uri = URI(@reqUrl + '/' + apiMethod)
         req = Net::HTTP::Post.new(uri)
-        hashel = parms[0]
-        req.set_form_data(hashel)
+        req.set_form_data(parms)
         
         res = Net::HTTP.start(uri.hostname, uri.port) do |http|
           http.request(req)
@@ -58,12 +81,14 @@ class OrderManager < Service
         if @api == 'vwapi'
             key = 'VWID'
         end
-        prms = [key => @merchant.name, 'OrderId' => payment.orderId]
+        prms = Hash[key => @merchant.name, 'OrderId' => payment.orderId]
         if @api == 'vwapi' || @api == 'apim'
-            prms['Password'] = @merchant.password
-            prms['Amount'] = payment.amount
+            prms = prms.merge({
+                'Password' => @merchant.password,
+                'Amount' => payment.amount
+            })
         end
-        return requestToPayture(prms, 'Charge')
+        return requestToPayture(prms, Commands::CHARGE)
     end
 
     def unblock(payment)
@@ -71,41 +96,42 @@ class OrderManager < Service
         if @api == 'vwapi'
             key = 'VWID'
         end
-        prms = [key => @merchant.name, 'OrderId' => payment.orderId, 'Amount' => payment.amount]
+        prms = Hash[key => @merchant.name, 'OrderId' => payment.orderId, 'Amount' => payment.amount]
         if @api == 'vwapi' || @api == 'apim'
             prms['Amount'] = payment.amount
         end
-        return requestToPayture(prms, 'Unblock')
+        return requestToPayture(prms, Commands::UNBLOCK)
     end
 
     def refund(payment)
         prms = Hash.new
         if @api == 'vwapi'
-            prms['VWID'] = @merchant.name
-            prms['DATA'] = "OrderId=#{payment.orderId};Password=#{@merchant.password};Amount=#{payment.amount}"
+            prms = prms.merge({'VWID' => @merchant.name, 
+            'DATA' => "OrderId=#{payment.orderId};Password=#{@merchant.password};Amount=#{payment.amount}"
+            })
         else
-            prms['Key'] = @merchant.name
-            prms['OrderId'] = payment.orderId
-            prms['Amount'] = payment.amount
-            prms['Password'] = @merchant.password
+            prms = prms.merge({
+                'Key' => @merchant.name,
+                'OrderId' => payment.orderId,
+                'Amount' => payment.amount,
+                'Password' => @merchant.password
+            })
         end
-        return requestToPayture(prms, 'Refund')
+        return requestToPayture(prms, Commands::REFUND)
     end
 
     def payStatus(payment)
         prms = Hash.new
         if @api == 'vwapi'
-            prms['VWID'] = @merchant.name
-            prms['DATA'] = "OrderId=#{payment.orderId}"    
+            prms = prms.merge({'VWID' => @merchant.name, 'DATA' => "OrderId=#{payment.orderId}" })
         else
-            prms['Key'] = @merchant.name
-            prms['OrderId'] = payment.orderId
+            prms = prms.merge({'Key' => @merchant.name, 'OrderId' => payment.orderId })
         end
-        return requestToPayture(prms, 'PayStatus')
+        return requestToPayture(prms, Commands::PAYSTATUS)
     end
 
     def getState(payment)
-        prms = ['Key' => @merchant.name, 'OrderId' => payment.orderId]
-        return requestToPayture(prms, 'GetState')
+        prms = Hash['Key' => @merchant.name, 'OrderId' => payment.orderId]
+        return requestToPayture(prms, Commands::GETSTATE)
     end
 end

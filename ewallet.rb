@@ -1,8 +1,7 @@
 
-class EWalletManager
+class EWalletManager < OrderManager
     def initialize(merch)
-        #need include the OrderManager
-        @ordManager = OrderManager.new(merch, 'vwapi')
+        super(merch, 'vwapi')
     end
 
     def init()
